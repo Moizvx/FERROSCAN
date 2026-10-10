@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ferroscan-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - GEE_ENABLED=true
+      - GEE_PROJECT_ID=keen-acolyte-420616
+      - GEE_AUTH_MODE=service_account
+      - GEE_SERVICE_ACCOUNT_EMAIL=kokil-218@keen-acolyte-420616.iam.gserviceaccount.com
+      - GEE_SERVICE_ACCOUNT_KEY_FILE=/app/service-account.json
+    volumes:
+      - ./backend/service-account.json:/app/service-account.json:ro
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ferroscan-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
