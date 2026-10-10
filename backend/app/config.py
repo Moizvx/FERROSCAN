@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     GEE_AUTH_MODE: str = "adc"  # "adc" | "service_account" | "none"
     GEE_SERVICE_ACCOUNT_EMAIL: str = ""
     GEE_SERVICE_ACCOUNT_KEY_FILE: str = ""
+    GEE_SERVICE_ACCOUNT_JSON: str = ""
     GEE_DEFAULT_DATASET: str = "COPERNICUS/S2_SR_HARMONIZED"
     GEE_DEM_DATASET: str = "USGS/SRTMGL1_003"
 

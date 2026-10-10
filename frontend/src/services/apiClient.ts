@@ -33,9 +33,11 @@ export interface BackendGeeLayersResponse {
   message: string;
 }
 
+const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
+
 export async function checkBackendHealth(): Promise<BackendHealth | null> {
   try {
-    const res = await fetch('/api/health');
+    const res = await fetch(`${API_BASE}/api/health`);
     if (!res.ok) return null;
     return await res.json();
   } catch {
@@ -45,7 +47,7 @@ export async function checkBackendHealth(): Promise<BackendHealth | null> {
 
 export async function getBackendGeeStatus(): Promise<BackendGeeStatus | null> {
   try {
-    const res = await fetch('/api/gee/status');
+    const res = await fetch(`${API_BASE}/api/gee/status`);
     if (!res.ok) return null;
     return await res.json();
   } catch {
@@ -60,7 +62,7 @@ export async function fetchGeeLayers(
   cloudCoverMax: number = 20.0
 ): Promise<BackendGeeLayersResponse | null> {
   try {
-    const res = await fetch('/api/gee/layers', {
+    const res = await fetch(`${API_BASE}/api/gee/layers`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

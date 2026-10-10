@@ -26,33 +26,49 @@ class EarthEngineService:
                 os.path.join(os.path.dirname(__file__), "..", "..", "..", "service-account.json"),
             ]
 
-            sa_path = None
-            for p in sa_candidates:
-                if p and os.path.exists(p):
-                    sa_path = os.path.abspath(p)
-                    break
+            sa_data = None
+            credentials = None
+            client_email = settings.GEE_SERVICE_ACCOUNT_EMAIL
+            project_id = settings.GEE_PROJECT_ID
 
-            # If service account file is found
-            if sa_path:
-                with open(sa_path, "r") as f:
-                    sa_data = json.load(f)
+            # 1. Check GEE_SERVICE_ACCOUNT_JSON environment variable first
+            if settings.GEE_SERVICE_ACCOUNT_JSON and settings.GEE_SERVICE_ACCOUNT_JSON.strip():
+                try:
+                    sa_data = json.loads(settings.GEE_SERVICE_ACCOUNT_JSON)
+                    credentials = ee.ServiceAccountCredentials(key_data=settings.GEE_SERVICE_ACCOUNT_JSON.strip())
+                    client_email = sa_data.get("client_email", client_email)
+                    project_id = sa_data.get("project_id", project_id)
+                except Exception as json_err:
+                    logger.warning(f"Could not parse GEE_SERVICE_ACCOUNT_JSON: {json_err}")
 
-                priv_key = sa_data.get("private_key", "")
-                if "REPLACE_WITH_YOUR_GCP_PRIVATE_KEY" in priv_key or "..." in priv_key:
-                    self.initialized = False
-                    self.init_error_message = (
-                        "The service-account.json file contains placeholder text ('...REPLACE_WITH_YOUR_GCP_PRIVATE_KEY...'). "
-                        "Please replace it with your complete GCP RSA private key."
+            # 2. If not from JSON string, check file path candidates
+            if not credentials:
+                for p in sa_candidates:
+                    if p and os.path.exists(p):
+                        sa_path = os.path.abspath(p)
+                        break
+
+                if sa_path:
+                    with open(sa_path, "r") as f:
+                        sa_data = json.load(f)
+
+                    priv_key = sa_data.get("private_key", "")
+                    if "REPLACE_WITH_YOUR_GCP_PRIVATE_KEY" in priv_key or "..." in priv_key:
+                        self.initialized = False
+                        self.init_error_message = (
+                            "The service-account.json file contains placeholder text ('...REPLACE_WITH_YOUR_GCP_PRIVATE_KEY...'). "
+                            "Please replace it with your complete GCP RSA private key."
+                        )
+                        return
+
+                    client_email = sa_data.get("client_email", client_email)
+                    project_id = sa_data.get("project_id", project_id)
+                    credentials = ee.ServiceAccountCredentials(
+                        email=client_email,
+                        key_file=sa_path,
                     )
-                    return
 
-                client_email = sa_data.get("client_email", settings.GEE_SERVICE_ACCOUNT_EMAIL)
-                project_id = sa_data.get("project_id", settings.GEE_PROJECT_ID)
-
-                credentials = ee.ServiceAccountCredentials(
-                    email=client_email,
-                    key_file=sa_path,
-                )
+            if credentials:
                 try:
                     if project_id:
                         ee.Initialize(credentials, project=project_id)
